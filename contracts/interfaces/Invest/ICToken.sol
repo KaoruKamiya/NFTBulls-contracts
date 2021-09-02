@@ -19,4 +19,6 @@ interface ICToken {
     function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
 
     function balanceOfUnderlying(address account) external returns (uint256);
+
+    function exchangeRateStored() external view returns (uint);
 }
