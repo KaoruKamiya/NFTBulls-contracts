@@ -41,7 +41,7 @@ import { ContractTransaction } from '@ethersproject/contracts';
 import { getContractAddress } from '@ethersproject/address';
 import { IYield } from '../../typechain/IYield';
 
-describe('Pool Borrow Withdrawal stage', async () => {
+describe.only('Pool Borrow Withdrawal stage', async () => {
     let savingsAccount: SavingsAccount;
     let strategyRegistry: StrategyRegistry;
 
@@ -585,7 +585,7 @@ describe('Pool Borrow Withdrawal stage', async () => {
                 );
 
                 const collateralTokensRandomAfter = await collateralToken.balanceOf(random.address);
-                const collateralSharesPoolAfter = await await savingsAccount.userLockedBalance(
+                const collateralSharesPoolAfter = await savingsAccount.userLockedBalance(
                     pool.address,
                     collateralToken.address,
                     poolStrategy.address
@@ -1003,7 +1003,7 @@ describe('Pool Borrow Withdrawal stage', async () => {
                 );
 
                 const collateralTokensRandomAfter = await collateralToken.balanceOf(random.address);
-                const collateralSharesPoolAfter = await await savingsAccount.userLockedBalance(
+                const collateralSharesPoolAfter = await savingsAccount.userLockedBalance(
                     pool.address,
                     collateralToken.address,
                     poolStrategy.address
