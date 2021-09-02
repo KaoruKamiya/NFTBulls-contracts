@@ -138,9 +138,9 @@ contract CompoundYield is IYield, Initializable, OwnableUpgradeable, ReentrancyG
         //balanceOfUnderlying returns underlying balance for total shares
         if (shares == 0) return 0;
         address cToken = liquidityToken[asset];
-        uint exchangeRate = ICToken(cToken).exchangeRateStored();
-        uint productValue = exchangeRate.mul(IERC20(cToken).balanceOf(address(this)));
-        uint truncatedAmount = productValue/1e18;
+        uint256 exchangeRate = ICToken(cToken).exchangeRateStored();
+        uint256 productValue = exchangeRate.mul(IERC20(cToken).balanceOf(address(this)));
+        uint256 truncatedAmount = productValue / 1e18;
         amount = truncatedAmount.mul(shares).div(IERC20(cToken).balanceOf(address(this)));
     }
 
