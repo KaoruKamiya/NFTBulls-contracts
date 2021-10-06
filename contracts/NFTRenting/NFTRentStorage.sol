@@ -18,8 +18,28 @@ contract NFTRentStorage is OwnableUpgradeable {
         LIQUIDATED
     }
 
+    enum QuoteStatus {
+        REQUESTED,
+        ACCEPTED,
+        REJECTED
+    }
+
     uint256 public NFTRentLineCounter;
     uint256 public constant yearInSeconds = 365 days;
+
+    // Add quote template 
+    struct QuoteVars {
+        address NFTRent;
+        address NFTOwner;
+        uint256 maxRentalDuration;
+        uint256 dailyRentalPrice;
+        uint256 collateralAmount;
+        address expert;
+        bool verified;
+        QuoteStatus quoteStatus;
+        // How to make sure that expert only stakes for this particular deal
+        // Try out the other option suggested by Ritik
+    }
 
     /*struct repayments {
         uint256 lastRepaymentTime;
@@ -55,4 +75,5 @@ contract NFTRentStorage is OwnableUpgradeable {
     // mapping(bytes32 => mapping(address => uint256)) collateralShareInStrategy;
     mapping(bytes32 => NFTRentLineUsageVars) public NFTRentLineUsage;
     mapping(bytes32 => NFTRentLineVars) public NFTRentLineInfo;
+    mapping(address => QuoteVars) public quoteVars;
 }
