@@ -24,7 +24,7 @@ contract expertVerify is NFTRentStorage, expertOnboard, NFTRent {
 
     function verifyBorrower(address _borrower) external OnlyExpert(msg.sender) {
         require(!VerifiedBorrowers[_borrower], 'The borrower is already verified');
-        _verifyBorrower(_borrower);
+        // _verifyBorrower(_borrower);
         VerifiedBorrowers[_borrower] = true;
         emit BorrowerVerified(_borrower);
     }
@@ -42,15 +42,16 @@ contract expertVerify is NFTRentStorage, expertOnboard, NFTRent {
         emit QuoteProvided(_rentNft, _dailyRentPrice, _repayInterval);
     }
 
-    function _verifyBorrower(address _borrower) internal {
-        // How to exactly verify the borrower
-    }
+    // function _verifyBorrower(address _borrower) internal {
+    //     // How to exactly verify the borrower
+    // }
 
-    function expertStake(address _rentNft, uint256 _amount) external payable OnlyExpert(msg.sender) {
+    function Stake(address _rentNft, uint256 _amount) external payable OnlyExpert(msg.sender) {
         require(bytes32(NFTtoHash[_rentNft]).length != 0, 'The NFT is not rented');
         require(NFTRentLineInfo[NFTtoHash[_rentNft]].currentStatus == NFTRentLineStatus.REQUESTED, 'Rent not requested');
+        uint256 stake = quoteVars[_rentNft].collateralAmount.mul(expertStake).div(10**30);
         if(quoteVars[_rentNft].verified == true) {
-            require(quoteVars[_rentNft].collateralAmount/2 == _amount, 'The amount provided is not correct');
+            require(stake == _amount, 'The amount provided is not correct');
             depositCollateral(_rentNft, _amount, quoteVars[_rentNft].collateralAsset);
         }        
     }

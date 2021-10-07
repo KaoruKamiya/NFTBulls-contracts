@@ -26,10 +26,15 @@ contract NFTRentStorage is OwnableUpgradeable {
 
     uint256 public NFTRentLineCounter;
     uint256 public constant yearInSeconds = 365 days;
+    uint256 public feeFraction = 10;
+    uint256 public stakeFraction = 50;
+    uint256 public expertFee = feeFraction.mul(10**28);
+    uint256 public expertStake = stakeFraction.mul(10**28);
 
     // Add quote template 
     struct QuoteVars {
         address NFTRent;
+        uint256 NFTId;
         address NFTOwner;
         uint256 maxRentalDuration;
         uint256 dailyRentalPrice;
@@ -71,6 +76,8 @@ contract NFTRentStorage is OwnableUpgradeable {
         address borrowAsset; // NFT Address
         address collateralAsset;
         NFTRentLineStatus currentStatus;
+        uint256 repayments;
+        uint256 repaymentsCompleted;
     }
     // mapping(bytes32 => mapping(address => uint256)) collateralShareInStrategy;
     mapping(bytes32 => NFTRentLineUsageVars) public NFTRentLineUsage;
