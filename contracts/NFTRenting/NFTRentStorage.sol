@@ -33,12 +33,14 @@ contract NFTRentStorage is OwnableUpgradeable {
         address NFTOwner;
         uint256 maxRentalDuration;
         uint256 dailyRentalPrice;
+        uint256 repayInterval;
+        address collateralAsset;
         uint256 collateralAmount;
         address expert;
         bool verified;
         QuoteStatus quoteStatus;
-        // How to make sure that expert only stakes for this particular deal
-        // Try out the other option suggested by Ritik
+        bool Toescrow;
+        bool Towallet;
     }
 
     /*struct repayments {
@@ -62,15 +64,13 @@ contract NFTRentStorage is OwnableUpgradeable {
         address borrower;
         bool verified;
         address expert;
-        uint256 NFTAmount;
+        uint256 NFTAmount; // Always remains 1 for ERC-721, will come into play when considering other token standards
         uint256 idealCollateralRatio; // Expected collateral Amount
-        uint256 liquidationThreshold; // Is it needed?
-        uint256 borrowRate;
+        // uint256 liquidationThreshold; 
+        uint256 borrowRate;  // daily rental price
         address borrowAsset; // NFT Address
         address collateralAsset;
         NFTRentLineStatus currentStatus;
-        bool autoLiquidation;
-        bool requestByLender;
     }
     // mapping(bytes32 => mapping(address => uint256)) collateralShareInStrategy;
     mapping(bytes32 => NFTRentLineUsageVars) public NFTRentLineUsage;

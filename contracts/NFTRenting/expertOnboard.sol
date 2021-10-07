@@ -7,7 +7,7 @@ import '../interfaces/IVerification.sol';
 contract expertOnboard is Initializable, OwnableUpgradeable {
     IVerification public verification;
 
-    mapping(address => string) expertData;
+    mapping(address => string) public expertData;
 
     event VerifierAdded(address verifier, string metadata);
     event VerifierRemoved(address verifier);
