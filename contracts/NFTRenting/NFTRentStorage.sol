@@ -15,7 +15,7 @@ contract NFTRentStorage is OwnableUpgradeable {
         ACTIVE,
         CLOSED,
         CANCELLED,
-        LIQUIDATED
+        DEFAULTED
     }
 
     enum QuoteStatus {
@@ -28,10 +28,12 @@ contract NFTRentStorage is OwnableUpgradeable {
     uint256 public constant yearInSeconds = 365 days;
     uint256 public feeFraction = 10;
     uint256 public stakeFraction = 50;
+    uint256 public liquidation = 20;
     uint256 public expertFee = feeFraction.mul(10**28);
     uint256 public expertStake = stakeFraction.mul(10**28);
+    uint256 public liquidationThreshold = liquidation.mul(10**30);
 
-    // Add quote template 
+    // Add quote template
     struct QuoteVars {
         address NFTRent;
         uint256 NFTId;
@@ -56,31 +58,29 @@ contract NFTRentStorage is OwnableUpgradeable {
     }*/
 
     struct NFTRentLineUsageVars {
-        uint256 principal;
-        uint256 totalInterestRepaid;
-        uint256 lastPrincipalUpdateTime;
-        uint256 interestAccruedTillPrincipalUpdate;
-        uint256 collateralAmount;
+        uint256 repayments;
+        uint256 withdrawInterval;
+        uint256 repaymentInterval;
+        uint256 repaymentsCompleted;
+        uint256 _rentalPrice;
+        uint256 loanStartTime;
+        uint256 lastRepaymentTime;
     }
 
     struct NFTRentLineVars {
         bool exists;
         address lender;
         address borrower;
-        bool verified;
-        address expert;
-        uint256 NFTAmount; // Always remains 1 for ERC-721, will come into play when considering other token standards
-        uint256 idealCollateralRatio; // Expected collateral Amount
-        // uint256 liquidationThreshold; 
-        uint256 borrowRate;  // daily rental price
-        address borrowAsset; // NFT Address
+        uint256 rentalPrice;
+        address NftAsset;
+        uint256 NftId;
         address collateralAsset;
         NFTRentLineStatus currentStatus;
-        uint256 repayments;
-        uint256 repaymentsCompleted;
+        // uint256 repayments;
+        // uint256 repaymentsCompleted;
     }
     // mapping(bytes32 => mapping(address => uint256)) collateralShareInStrategy;
     mapping(bytes32 => NFTRentLineUsageVars) public NFTRentLineUsage;
     mapping(bytes32 => NFTRentLineVars) public NFTRentLineInfo;
-    mapping(address => QuoteVars) public quoteVars;
+    mapping(address => mapping(uint256 => QuoteVars)) public quoteVarsInfo;
 }
