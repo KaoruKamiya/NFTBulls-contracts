@@ -33,8 +33,13 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
     event QuoteRequested(address NFTRent);
     event QuoteAccepted(address NFTRent, uint256 DailyRentPrice);
     event QuoteRejected(address NFTRent, uint256 DailyRentPrice);
-    event RentRequested(address NFTRent, bytes32 NFTRentHash);
+    event RentRequested(address NFTRent, bytes32 NFTRentHash, NFTRentLineStatus currentStatus);
+    event RentActive(address NFTRent, bytes32 NFTRentHash, NFTRentLineStatus currentStatus);
+    event RentClosed(address NFTRent, bytes32 NFTRentHash, NFTRentLineStatus currentStatus);
+    event RentCancelled(address NFTRent, bytes32 NFTRentHash,  NFTRentLineStatus currentStatus);
+    event RentDefaulted(address NFTRent, bytes32 NFTRentHash,  NFTRentLineStatus currentStatus);
     event Repaid(address _rentNft, uint256 repaymentsLeft);
+    event LendingStopped(address _rentNft, uint256 _nftId);
 
     function requestQuote(
         address _rentNft,
@@ -87,6 +92,7 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
         require(quoteVarsInfo[_rentNft][_nftId].NFTOwner == msg.sender, 'Only lender can stop lending');
         delete quoteVarsInfo[_rentNft][_nftId];
         quotes[_rentNft][_nftId] = false;
+        emit LendingStopped(_rentNft, _nftId);
     }
 
     function Rent(address _rentNft, uint256 _nftId) external payable {
@@ -120,7 +126,7 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
         NFTRentLineUsage[NFTRentLineHash].lastRepaymentTime = block.timestamp;
         NFTRentLineInfo[NFTRentLineHash].currentStatus = NFTRentLineStatus.REQUESTED;
 
-        emit RentRequested(_rentNft, NFTRentLineHash);
+        emit RentRequested(_rentNft, NFTRentLineHash, NFTRentLineInfo[NFTRentLineHash].currentStatus);
     }
 
     function depositCollateral(
@@ -156,8 +162,10 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
             }
             NFTRentLineInfo[NFTRentLineHash].currentStatus = NFTRentLineStatus.ACTIVE;
             NFTRentLineUsage[NFTRentLineHash].lastRepaymentTime = block.timestamp;
+            emit RentActive(_rentNft, NFTRentLineHash, NFTRentLineInfo[NFTRentLineHash].currentStatus);
         } else {
             NFTRentLineInfo[NFTRentLineHash].currentStatus = NFTRentLineStatus.CANCELLED;
+            emit RentCancelled(_rentNft, NFTRentLineHash, NFTRentLineInfo[NFTRentLineHash].currentStatus);
         }
     }
 
@@ -189,6 +197,7 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
             IERC721(_rentNft).safeTransferFrom(msg.sender, to, tokenId);
         }
         NFTRentLineInfo[NFTRentLineHash].currentStatus = NFTRentLineStatus.CLOSED;
+        emit RentClosed(_rentNft, NFTRentLineHash, NFTRentLineInfo[NFTRentLineHash].currentStatus);
     }
 
     function repayInterest(
@@ -217,6 +226,7 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
             emit Repaid(_rentNft, NFTRentLineUsage[NFTRentLineHash].repaymentsCompleted);
         } else {
             NFTRentLineInfo[NFTRentLineHash].currentStatus == NFTRentLineStatus.DEFAULTED;
+            emit RentDefaulted(_rentNft, NFTRentLineHash, NFTRentLineInfo[NFTRentLineHash].currentStatus);
         }
     }
 
