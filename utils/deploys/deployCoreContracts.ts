@@ -9,6 +9,14 @@ import { YearnYield } from '../../typechain/YearnYield';
 import { PoolToken } from '../../typechain/PoolToken';
 import { CreditLine } from '../../typechain/CreditLine';
 
+import { ExpertOnboard } from '../../typechain/ExpertOnboard';
+import { ExpertVerify } from '../../typechain/ExpertVerify';
+import { NFTRent } from '../../typechain/NFTRent';
+
+import { ExpertOnboard__factory } from '../../typechain/factories/ExpertOnboard__factory';
+import { ExpertVerify__factory } from '../../typechain/factories/ExpertVerify__factory';
+import { NFTRent__factory } from '../../typechain/factories/NFTRent__factory';
+
 import { SavingsAccount__factory } from '../../typechain/factories/SavingsAccount__factory';
 import { StrategyRegistry__factory } from '../../typechain/factories/StrategyRegistry__factory';
 import { NoYield__factory } from '../../typechain/factories/NoYield__factory';
@@ -89,5 +97,29 @@ export default class DeployCoreContracts {
 
     public async getCreditLines(creditLinesAddress: Address): Promise<CreditLine> {
         return await new CreditLine__factory(this._deployerSigner).attach(creditLinesAddress);
+    }
+
+    public async deployExpertOnboard(): Promise<ExpertOnboard> {
+        return await new ExpertOnboard__factory(this._deployerSigner).deploy();
+    }
+
+    public async getExpertOnboard(ExpertOnboardAddress: Address): Promise<ExpertOnboard> {
+        return await new ExpertOnboard__factory(this._deployerSigner).attach(ExpertOnboardAddress);
+    }
+
+    public async deployExpertVerify(): Promise<ExpertVerify> {
+        return await new ExpertVerify__factory(this._deployerSigner).deploy();
+    }
+
+    public async getExpertVerify(ExpertVerifyAddress: Address): Promise<ExpertVerify> {
+        return await new ExpertVerify__factory(this._deployerSigner).attach(ExpertVerifyAddress);
+    }
+
+    public async deployNFTRent(): Promise<NFTRent> {
+        return await new NFTRent__factory(this._deployerSigner).deploy();
+    }
+
+    public async getNFTRent(NFTRentAddress: Address): Promise<NFTRent> {
+        return await new NFTRent__factory(this._deployerSigner).attach(NFTRentAddress);
     }
 }

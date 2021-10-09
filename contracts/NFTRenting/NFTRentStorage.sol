@@ -21,7 +21,8 @@ contract NFTRentStorage is OwnableUpgradeable {
     enum QuoteStatus {
         REQUESTED,
         ACCEPTED,
-        REJECTED
+        REJECTED,
+        FIXED
     }
 
     uint256 public NFTRentLineCounter;

@@ -25,9 +25,10 @@ contract expertOnboard is Initializable, OwnableUpgradeable {
     /// @dev Verifier can add master address or remove addresses added by it
     /// @param _verifier Address of the verifier contract
     /// @param _metadata Data associated with the Expert
-    function addVerifier(address _verifier, string memory _metadata) external onlyOwner {
+    function addExpert(address _verifier, string memory _metadata) external onlyOwner {
         require(bytes(expertData[_verifier]).length == 0, 'AddExpert: Verifier already exists');
-        verification.addVerifier(_verifier);
+        // verification.addVerifier(_verifier);
+        verification.registerMasterAddress(_verifier, true);
         expertData[_verifier] = _metadata;
         emit VerifierAdded(_verifier, _metadata);
     }
@@ -35,10 +36,11 @@ contract expertOnboard is Initializable, OwnableUpgradeable {
     /// @notice owner can remove exisiting verifier
     /// @dev Verifier can add master address or remove addresses added by it
     /// @param _verifier Address of the verifier contract
-    function removeVerifier(address _verifier) external onlyOwner {
+    function removeExpert(address _verifier) external onlyOwner {
         require(bytes(expertData[_verifier]).length != 0, 'AddExpert: Verifier does not exists');
         delete expertData[_verifier];
-        verification.removeVerifier(_verifier);
+        verification.unregisterMasterAddress(_verifier, address(this));
+        // verification.removeVerifier(_verifier);
         emit VerifierRemoved(_verifier);
     }
 }

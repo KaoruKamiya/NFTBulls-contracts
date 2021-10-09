@@ -15,6 +15,8 @@ import { Token__factory } from '../../typechain/factories/Token__factory';
 
 import { Address } from 'hardhat-deploy/dist/types';
 import { IYield } from '../../typechain/IYield';
+import { IERC721 } from '../../typechain/IERC721';
+import { IERC721__factory } from '../../typechain/factories/IERC721__factory';
 
 export default class DeployMockContracts {
     private _deployerSigner: Signer;
@@ -53,5 +55,9 @@ export default class DeployMockContracts {
 
     public async getToken(token: Address): Promise<Token> {
         return await Token__factory.connect(token, this._deployerSigner);
+    }
+
+    public async getMockERC721(NFTAddress: Address): Promise<IERC721> {
+        return await IERC721__factory.connect(NFTAddress, this._deployerSigner);
     }
 }

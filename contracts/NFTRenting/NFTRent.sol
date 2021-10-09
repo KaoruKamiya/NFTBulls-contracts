@@ -3,16 +3,27 @@ pragma solidity 0.7.0;
 
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import '../interfaces/IVerification.sol';
 import './NFTRentStorage.sol';
+// import './expertOnboard.sol';
 
-contract NFTRent is NFTRentStorage, ReentrancyGuard {
+contract NFTRent is Initializable, OwnableUpgradeable, NFTRentStorage {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    IVerification public verification;
 
+    mapping(address => string) public expertData;
     mapping(address => mapping(uint256 => bool)) public quotes;
     mapping(address => mapping(uint256 => bytes32)) public NFTtoHash;
+    mapping(address => bool) public VerifiedBorrowers;
+
+    modifier OnlyExpert(address _expert) {
+        require(bytes(expertData[_expert]).length != 0, 'The Expert alone can access this function');
+        _;
+    }
 
     modifier ifNFTRentLineExists(bytes32 NFTRentLineHash) {
         require(NFTRentLineInfo[NFTRentLineHash].currentStatus != NFTRentLineStatus.NOT_CREATED, 'NFTRent Line does not exist');
@@ -30,7 +41,8 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
     }
 
     // Add events here to get the updates on the requested quotes made by the lender
-    event QuoteRequested(address NFTRent);
+    event QuoteRequested(string _name, address _rentNft,uint256 _nftId, address _collateralAsset, uint256 _rentDuration);
+    event QuoteReleased(string _name, address _rentNft,uint256 _nftId, address _collateralAsset, uint256 _rentDuration, uint256 _dailyRentalPrice, uint256 _collateralAmount);
     event QuoteAccepted(address NFTRent, uint256 DailyRentPrice);
     event QuoteRejected(address NFTRent, uint256 DailyRentPrice);
     event RentRequested(address NFTRent, bytes32 NFTRentHash, NFTRentLineStatus currentStatus);
@@ -40,6 +52,32 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
     event RentDefaulted(address NFTRent, bytes32 NFTRentHash,  NFTRentLineStatus currentStatus);
     event Repaid(address _rentNft, uint256 repaymentsLeft);
     event LendingStopped(address _rentNft, uint256 _nftId);
+    event QuoteProvided(address _rentNft, uint256 _NftId, uint256 _dailyRentPrice, uint256 _repayInterval, uint256 _collateralAmount);
+    event BorrowerVerified(address _borrower);
+    event VerifierAdded(address verifier, string metadata);
+    event VerifierRemoved(address verifier);
+
+    function initialize(address _admin, address _verification) public initializer {
+        super.__Ownable_init();
+        super.transferOwnership(_admin);
+        verification = IVerification(_verification);
+    }
+
+    function addExpert(address _verifier, string memory _metadata) external onlyOwner {
+        require(bytes(expertData[_verifier]).length == 0, 'AddExpert: Verifier already exists');
+        // verification.addVerifier(_verifier);
+        verification.registerMasterAddress(_verifier, true);
+        expertData[_verifier] = _metadata;
+        emit VerifierAdded(_verifier, _metadata);
+    }
+
+    function removeExpert(address _verifier) external onlyOwner {
+        require(bytes(expertData[_verifier]).length != 0, 'AddExpert: Verifier does not exists');
+        delete expertData[_verifier];
+        verification.unregisterMasterAddress(_verifier, address(this));
+        // verification.removeVerifier(_verifier);
+        emit VerifierRemoved(_verifier);
+    }
 
     function requestQuote(
         address _rentNft,
@@ -58,7 +96,36 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
         quoteVarsInfo[_rentNft][_nftId].verified = false;
         quoteVarsInfo[_rentNft][_nftId].quoteStatus = QuoteStatus.REQUESTED;
         quotes[_rentNft][_nftId] = true;
-        emit QuoteRequested(_rentNft);
+        // ERC721(_rentNft).name();
+        emit QuoteRequested(ERC721(_rentNft).name(),_rentNft,_nftId,_collateralAsset,_rentDuration);
+    }
+
+    function CustomQuote(
+        address _rentNft,
+        uint256 _nftId,
+        uint256 _rentDuration,
+        address _collateralAsset,
+        uint256 _dailyRentalPrice,
+        uint256 _repayInterval,
+        uint256 _collateralAmount
+    ) external {
+        require(_rentNft != address(0), 'Invalid NFT address');
+        require(!quotes[_rentNft][_nftId], 'The quote already exists');
+        quoteVarsInfo[_rentNft][_nftId].NFTRent = _rentNft;
+        quoteVarsInfo[_rentNft][_nftId].NFTId = _nftId;
+        quoteVarsInfo[_rentNft][_nftId].NFTOwner = msg.sender;
+        quoteVarsInfo[_rentNft][_nftId].maxRentalDuration = _rentDuration;
+        quoteVarsInfo[_rentNft][_nftId].dailyRentalPrice = _dailyRentalPrice;
+        quoteVarsInfo[_rentNft][_nftId].repayInterval = _repayInterval;
+        quoteVarsInfo[_rentNft][_nftId].collateralAsset = _collateralAsset;
+        quoteVarsInfo[_rentNft][_nftId].collateralAmount = _collateralAmount;
+        quoteVarsInfo[_rentNft][_nftId].expert = address(0);
+        quoteVarsInfo[_rentNft][_nftId].verified = false;
+        quoteVarsInfo[_rentNft][_nftId].quoteStatus = QuoteStatus.FIXED;
+        quoteVarsInfo[_rentNft][_nftId].Toescrow = false;
+        quoteVarsInfo[_rentNft][_nftId].Towallet = true;
+        quotes[_rentNft][_nftId] = true;
+        emit QuoteReleased(ERC721(_rentNft).name(),_rentNft,_nftId,_collateralAsset,_rentDuration,_dailyRentalPrice,_collateralAmount);
     }
 
     function AcceptQuote(address _rentNft, uint256 _nftId) external {
@@ -272,5 +339,70 @@ contract NFTRent is NFTRentStorage, ReentrancyGuard {
             totalClaim = totalClaim.add(stake).sub(_fees);
         }
         IERC20(asset).safeTransferFrom(address(this), msg.sender, totalClaim);
+    }
+
+    function verifyBorrower(address _borrower) external OnlyExpert(msg.sender) {
+        require(!VerifiedBorrowers[_borrower], 'The borrower is already verified');
+        // _verifyBorrower(_borrower);
+        VerifiedBorrowers[_borrower] = true;
+        emit BorrowerVerified(_borrower);
+    }
+
+    function provideQuote(
+        address _rentNft,
+        uint256 _nftId,
+        uint256 _dailyRentPrice,
+        uint256 _collateralAmount,
+        uint256 _repayInterval,
+        bool _toescrow,
+        bool _towallet
+    ) external OnlyExpert(msg.sender) {
+        require(_rentNft != address(0), 'Invalid NFT address');
+        require(quotes[_rentNft][_nftId], 'The quote does not exist');
+        require(quoteVarsInfo[_rentNft][_nftId].quoteStatus == QuoteStatus.REQUESTED,'The quote value exists');
+        require(_toescrow != _towallet, 'Both escrow and wallet cannot be set to same value');
+        quoteVarsInfo[_rentNft][_nftId].expert = msg.sender;
+        quoteVarsInfo[_rentNft][_nftId].verified = true;
+        quoteVarsInfo[_rentNft][_nftId].dailyRentalPrice = _dailyRentPrice;
+        quoteVarsInfo[_rentNft][_nftId].collateralAmount = _collateralAmount;
+        quoteVarsInfo[_rentNft][_nftId].repayInterval = _repayInterval;
+        quoteVarsInfo[_rentNft][_nftId].Toescrow = _toescrow;
+        quoteVarsInfo[_rentNft][_nftId].Towallet = _towallet;
+        emit QuoteProvided(_rentNft, _nftId, _dailyRentPrice, _repayInterval, _collateralAmount);
+    }
+
+    function Stake(
+        address _rentNft,
+        uint256 _nftId,
+        uint256 _amount
+    ) external payable OnlyExpert(msg.sender) {
+        bytes32 NFTRentLineHash = NFTtoHash[_rentNft][_nftId];
+        require(NFTRentLineInfo[NFTRentLineHash].exists, 'The NFT rent line does not exist');
+        require(NFTRentLineInfo[NFTRentLineHash].currentStatus == NFTRentLineStatus.REQUESTED, 'Rent not requested');
+        uint256 stake = quoteVarsInfo[_rentNft][_nftId].collateralAmount.mul(expertStake).div(10**30);
+        if (quoteVarsInfo[_rentNft][_nftId].verified == true) {
+            require(stake == _amount, 'The amount provided is not correct');
+            depositCollateral(_rentNft, _nftId, _amount);
+        }
+    }
+
+    function ClaimStake(address _rentNft, uint256 _nftId) external OnlyExpert(msg.sender) {
+        bytes32 NFTRentLineHash = NFTtoHash[_rentNft][_nftId];
+        require(NFTRentLineInfo[NFTRentLineHash].exists, 'The NFT rent line does not exist');
+        require(NFTRentLineInfo[NFTRentLineHash].currentStatus == NFTRentLineStatus.CANCELLED, 'Rent not cancelled');
+        uint256 stake = quoteVarsInfo[_rentNft][_nftId].collateralAmount.mul(expertStake).div(10**30);
+        if (quoteVarsInfo[_rentNft][_nftId].verified == true) {
+            _claimCollateral(_rentNft, _nftId, stake);
+        }
+    }
+
+    function GetStakeBack(address _rentNft, uint256 _nftId) external OnlyExpert(msg.sender) {
+        bytes32 NFTRentLineHash = NFTtoHash[_rentNft][_nftId];
+        require(NFTRentLineInfo[NFTRentLineHash].exists, 'The NFT rent line does not exist');
+        require(NFTRentLineInfo[NFTRentLineHash].currentStatus == NFTRentLineStatus.CLOSED, 'Rent not closed');
+        uint256 stake = quoteVarsInfo[_rentNft][_nftId].collateralAmount.mul(expertStake).div(10**30);
+        if (quoteVarsInfo[_rentNft][_nftId].verified == true) {
+            _claimCollateral(_rentNft, _nftId, stake);
+        }
     }
 }
